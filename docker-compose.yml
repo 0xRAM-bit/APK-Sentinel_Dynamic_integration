@@ -1,0 +1,35 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - ./analysis_data:/app/analysis_data
+      - uploads:/app/uploads
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:///./sentinel.db
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - UPLOAD_DIR=/app/uploads
+      - ANALYSIS_DIR=/app/analysis_data
+      - ANALYSIS_HOST_DIR=${PWD}/analysis_data
+      - CORS_ORIGINS=["http://localhost:5173"]
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - VITE_API_PROXY_TARGET=http://backend:8000
+    restart: unless-stopped
+
+volumes:
+  uploads:

@@ -1,0 +1,8 @@
+# No external dependencies needed for analysis scripts
+# Python standard library provides everything required:
+# - xml.etree.ElementTree for manifest parsing
+# - re for regex pattern matching
+# - hashlib for hashing
+# - json for output serialization
+# - os/pathlib for filesystem operations
+# - math for entropy calculations

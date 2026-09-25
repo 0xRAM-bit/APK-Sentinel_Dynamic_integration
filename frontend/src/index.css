@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Base styles ───────────────────────────────────────────────────── */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: #0f1117;
+  color: #e4e5e9;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #161922;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #23262f;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #2d3140;
+}
+
+/* ── Code / mono ───────────────────────────────────────────────────── */
+
+code, .font-mono {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* ── Risk level badge colors ───────────────────────────────────────── */
+
+.risk-low { color: #22c55e; }
+.risk-moderate { color: #84cc16; }
+.risk-medium { color: #eab308; }
+.risk-high { color: #f97316; }
+.risk-critical { color: #ef4444; }
+
+.risk-bg-low { background-color: rgba(34, 197, 94, 0.1); border-color: rgba(34, 197, 94, 0.3); }
+.risk-bg-moderate { background-color: rgba(132, 204, 22, 0.1); border-color: rgba(132, 204, 22, 0.3); }
+.risk-bg-medium { background-color: rgba(234, 179, 8, 0.1); border-color: rgba(234, 179, 8, 0.3); }
+.risk-bg-high { background-color: rgba(249, 115, 22, 0.1); border-color: rgba(249, 115, 22, 0.3); }
+.risk-bg-critical { background-color: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); }

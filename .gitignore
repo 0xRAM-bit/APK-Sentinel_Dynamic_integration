@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+.venv/
+venv/
+env/
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Environment
+.env
+*.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Analysis data (runtime)
+analysis_data/
+uploads/
+
+# SQLite
+*.db
+*.sqlite3
+
+# Docker
+docker-compose.override.yml
+
+# Test
+.pytest_cache/
+htmlcov/
+.coverage
