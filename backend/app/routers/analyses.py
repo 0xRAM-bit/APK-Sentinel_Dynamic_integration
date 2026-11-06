@@ -14,7 +14,7 @@ import asyncio
 import json
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -40,6 +40,7 @@ router = APIRouter(prefix="/api/analyses", tags=["analyses"])
 @router.post("", response_model=AnalysisCreated, status_code=201)
 async def upload_apk(
     file: UploadFile = File(...),
+    enable_dynamic_analysis: bool = Form(False),
     db: AsyncSession = Depends(get_db),
 ):
     """Upload an APK file and create a new analysis job."""
@@ -49,12 +50,22 @@ async def upload_apk(
         raise HTTPException(status_code=400, detail=str(e))
 
     # Create database record
+    if enable_dynamic_analysis and (
+        not settings.DYNAMIC_ANALYSIS_ENABLED
+        or not settings.DYNAMIC_ANALYSIS_BASE_URL
+        or not settings.DYNAMIC_ANALYSIS_API_KEY
+    ):
+        cleanup_workspace(analysis_id)
+        raise HTTPException(status_code=503, detail="Dynamic Analysis Service Unavailable")
+
     analysis = Analysis(
         id=analysis_id,
         sha256=sha256,
         original_filename=file.filename or "unknown.apk",
         file_size=file_size,
         status=AnalysisStatus.QUEUED,
+        dynamic_requested=enable_dynamic_analysis,
+        dynamic_status="QUEUED" if enable_dynamic_analysis else "NOT_REQUESTED",
     )
     db.add(analysis)
     await db.commit()
@@ -145,6 +156,9 @@ async def get_analysis(
         progress_percent=progress_percent,
         progress_stage=progress_stage,
         progress_tasks=progress_tasks,
+        dynamic_requested=analysis.dynamic_requested,
+        dynamic_status=analysis.dynamic_status,
+        dynamic_error=analysis.dynamic_error,
     )
 
 

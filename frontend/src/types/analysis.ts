@@ -30,6 +30,9 @@ export interface AnalysisStatus {
   progress_percent: number;
   progress_stage: string;
   progress_tasks: ProgressTask[];
+  dynamic_requested: boolean;
+  dynamic_status: 'NOT_REQUESTED' | 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'PARTIAL';
+  dynamic_error: string | null;
 }
 
 export interface ProgressTask {
@@ -166,9 +169,26 @@ export interface AnalysisResults {
     obfuscation: ObfuscationInfo;
     certificate: CertificateInfo;
     score: ScoreBreakdown;
+    dynamic_findings?: DynamicFinding[];
+    correlated_findings?: DynamicFinding[];
+    dynamic_score?: { total: number; finding_count: number };
+    combined_score?: { total: number; level: RiskLevel; static_weight: number; dynamic_weight: number };
+    analysis_coverage?: { static: string; dynamic: string; overall: string };
     virustotal?: VirusTotalReputation;
     user_guidance?: UserGuidance;
   } | null;
+}
+
+export interface DynamicFinding {
+  id: string;
+  source: 'dynamic';
+  category: string;
+  title: string;
+  severity: string;
+  confidence: string;
+  description: string;
+  evidence: Record<string, string>;
+  recommendation: string;
 }
 
 export interface VirusTotalReputation {

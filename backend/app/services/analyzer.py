@@ -56,6 +56,7 @@ class BackgroundTaskJobService(AnalysisJobService):
         self._state_lock = threading.Lock()
         self._cancel_requested: set[str] = set()
         self._active_containers: dict[str, str] = {}
+        self._dynamic_semaphore = asyncio.Semaphore(max(1, settings.DYNAMIC_ANALYSIS_MAX_CONCURRENT_JOBS))
 
     def request_cancel(self, analysis_id: str) -> None:
         """Request cancellation and stop the active analyzer container, if any."""
@@ -154,6 +155,46 @@ class BackgroundTaskJobService(AnalysisJobService):
                 from app.services.scoring import ScoringEngine
                 scoring_engine = ScoringEngine()
                 scored_results = scoring_engine.calculate_score(results)
+                if analysis.dynamic_requested:
+                    analysis.dynamic_status = "RUNNING"
+                    await session.commit()
+                    _write_progress(workspace, 97, "Running dynamic security analysis")
+                    try:
+                        from app.services.dynamic.dynamic_orchestrator import run_dynamic_analysis
+                        from app.services.dynamic.finding_correlator import correlate_findings
+                        async with self._dynamic_semaphore:
+                            dynamic_findings = await asyncio.wait_for(
+                                asyncio.to_thread(
+                                    run_dynamic_analysis,
+                                    workspace / "input" / "application.apk",
+                                    analysis.sha256,
+                                    scored_results,
+                                    lambda: self._is_cancel_requested(analysis_id),
+                                ),
+                                timeout=settings.DYNAMIC_ANALYSIS_TIMEOUT,
+                            )
+                        correlated_findings, correlated = correlate_findings(scored_results, dynamic_findings)
+                        from app.services.dynamic.dynamic_scoring import add_dynamic_score
+                        scored_results = add_dynamic_score(scored_results, correlated_findings, correlated)
+                        analysis.dynamic_status = "COMPLETED"
+                        analysis.dynamic_error = None
+                    except asyncio.CancelledError:
+                        raise
+                    except Exception as dynamic_error:
+                        if self._is_cancel_requested(analysis_id):
+                            raise AnalysisCancelled("Scan cancelled by user") from dynamic_error
+                        # Preserve the verified static result; missing or failed
+                        # runtime evidence must never become a zero dynamic score.
+                        analysis.dynamic_status = "FAILED"
+                        analysis.dynamic_error = str(dynamic_error)[:1000]
+                        scored_results["dynamic_findings"] = []
+                        scored_results["analysis_coverage"] = {
+                            "static": "COMPLETED", "dynamic": "FAILED", "overall": "STATIC_ONLY"
+                        }
+                        logger.warning(
+                            "Dynamic analysis unavailable; retaining static-only score | analysis_id=%s | error=%s",
+                            analysis_id, str(dynamic_error),
+                        )
                 scored_results["virustotal"] = reputation
                 scored_results["user_guidance"] = build_user_guidance(
                     scored_results, reputation
@@ -216,6 +257,13 @@ class BackgroundTaskJobService(AnalysisJobService):
                         analysis.status = (
                             AnalysisStatus.CANCELLED if cancelled else AnalysisStatus.FAILED
                         )
+                        if analysis.dynamic_requested and analysis.dynamic_status in {"QUEUED", "RUNNING"}:
+                            analysis.dynamic_status = "CANCELLED" if cancelled else "FAILED"
+                            analysis.dynamic_error = (
+                                "Dynamic analysis was cancelled."
+                                if cancelled
+                                else "Dynamic analysis did not complete."
+                            )
                         analysis.error_message = (
                             "Scan cancelled by user" if cancelled else str(e)
                         )

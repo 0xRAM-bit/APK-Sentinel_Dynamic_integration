@@ -87,6 +87,34 @@ export default function AnalysisResults() {
         <StatusBadge status={status.status} />
       </div>
 
+      <section className="bg-sentinel-surface border border-sentinel-border rounded p-4 mb-6">
+        <h2 className="text-xs font-semibold text-sentinel-muted uppercase tracking-wider mb-3">Analysis Coverage</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+          <MetaItem label="Static Analysis" value="Completed" />
+          <MetaItem label="Dynamic Analysis" value={status.dynamic_status.replace('_', ' ')} />
+          <MetaItem label="Coverage" value={r?.analysis_coverage?.overall || 'STATIC_ONLY'} />
+          {r?.dynamic_score && <MetaItem label="Dynamic Risk Score" value={`${r.dynamic_score.total}/100`} />}
+        </div>
+        {status.dynamic_error && <p className="mt-3 text-xs text-yellow-400">Dynamic analysis could not be completed: {status.dynamic_error}</p>}
+        {r?.dynamic_findings && r.dynamic_findings.length > 0 && (
+          <div className="mt-4 space-y-2">
+            <h3 className="text-xs font-semibold text-sentinel-text">Runtime Findings ({r.dynamic_findings.length})</h3>
+            {r.dynamic_findings.map(f => <article key={f.id} className="rounded bg-sentinel-bg p-3 text-xs">
+              <div className="flex items-center gap-2"><SeverityBadge severity={f.severity} /><strong>{f.title}</strong><span className="text-sentinel-muted">Confidence: {f.confidence}</span></div>
+              <p className="mt-2 text-sentinel-muted">{f.description}</p>
+              <pre className="mt-2 whitespace-pre-wrap text-[10px] text-sentinel-muted">{JSON.stringify(f.evidence, null, 2)}</pre>
+              <p className="mt-2 text-sentinel-accent">{f.recommendation}</p>
+            </article>)}
+          </div>
+        )}
+        {r?.correlated_findings && r.correlated_findings.length > 0 && (
+          <div className="mt-4 rounded border border-sentinel-accent/30 p-3">
+            <h3 className="text-xs font-semibold text-sentinel-accent mb-2">Correlated Static and Runtime Evidence ({r.correlated_findings.length})</h3>
+            {r.correlated_findings.map(f => <p key={f.id} className="text-xs text-sentinel-muted">{f.title}: runtime evidence matched an embedded static network indicator.</p>)}
+          </div>
+        )}
+      </section>
+
       {/* Metadata bar */}
       <div className="bg-sentinel-surface border border-sentinel-border rounded p-4 mb-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">

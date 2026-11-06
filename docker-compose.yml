@@ -17,12 +17,25 @@ services:
       - label=disable
     environment:
       - DATABASE_URL=sqlite+aiosqlite:///./sentinel.db
-      - GROQ_API_KEY=${GROQ_API_KEY:-}
       - UPLOAD_DIR=/app/uploads
       - ANALYSIS_DIR=/app/analysis_data
       - ANALYSIS_HOST_DIR=${PWD}/analysis_data
       - PYTHONPATH=/app
       - CORS_ORIGINS=["http://localhost:5173"]
+    restart: unless-stopped
+
+  mobsf:
+    image: opensecurity/mobile-security-framework-mobsf:latest
+    env_file:
+      - ./backend/.env
+    volumes:
+      - mobsf_data:/home/mobsf/.MobSF
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      # Keep the web/API panel and device proxy private to this workstation.
+      - "127.0.0.1:8001:8000"
+      - "127.0.0.1:1337:1337"
     restart: unless-stopped
 
   frontend:
@@ -41,3 +54,4 @@ services:
 
 volumes:
   uploads:
+  mobsf_data:
