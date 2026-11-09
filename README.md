@@ -79,6 +79,10 @@ cp backend/.env.example backend/.env
 # Build the analyzer container
 docker build -t apk-sentinel-analyzer ./analyzer
 
+docker compose up -d mobsf
+
+docker compose up --build backend frontend
+
 # Start all services
 docker compose up --build
 ```
